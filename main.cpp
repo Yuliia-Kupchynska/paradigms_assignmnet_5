@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <stack>
+#include <cmath>
 using namespace std;
 
 unordered_map<string, int> precedence = {
@@ -100,6 +101,37 @@ vector<string> shunting_yard(vector<string> tokens) {
     return output;
 }
 
+float calculate(vector<string> tokens) {
+    stack<float> S;
+    for ( string token : tokens) {
+        if (is_number(token)) {
+            S.push(stof(token));
+        }
+        else {
+            float b = S.top();
+            S.pop();
+            if (token == "abs") S.push(abs(b));
+            else {
+                if (!S.empty()) {
+                    float a = S.top();
+                    S.pop();
+
+                    if (token == "+") S.push(a + b);
+                    else if (token == "-") S.push(a - b);
+                    else if (token == "*") S.push(a * b);
+                    else if (token == "/") S.push(a / b);
+                    else if (token == "pow") S.push(pow(a, b));
+                    else if (token == "max") S.push(max(a, b));
+                    else if (token == "min") S.push(min(a, b));
+                }
+                else return numeric_limits<float>::infinity();
+            }
+
+        }
+    }
+    return S.top();
+}
+
 int main() {
     string str = "34*max(9+ 45, 9.8)";
     auto tokens = tokenize(str);
@@ -107,4 +139,6 @@ int main() {
     for (auto x : res) {
         cout << x << " ";
     }
+    cout << endl;
+    cout << calculate(res);
 }
