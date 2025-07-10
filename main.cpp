@@ -7,6 +7,8 @@
 #include <cmath>
 #include <algorithm>
 
+#define TEST_MODE false
+
 using namespace std;
 
 unordered_map<string, int> precedence = {
@@ -139,7 +141,7 @@ int main() {
         getline(cin, input);
         if (input.starts_with("var ")) {
             variable_definition(input);
-            return;
+            return false;
         }
 
         auto tokens = tokenize(input);
@@ -147,9 +149,11 @@ int main() {
         auto res = calculate(rpn);
 
         if (res == numeric_limits<float>::infinity()) cout << "Invalid expression" << endl;
+        else if (TEST_MODE) cout << "Echo: " << res << endl;
         else cout << res << endl;
+        return true;
     };
     while (true) {
-        input();
+        if (input() && TEST_MODE) return 0;
     }
 }
