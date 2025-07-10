@@ -5,6 +5,8 @@
 #include <unordered_set>
 #include <stack>
 #include <cmath>
+#include <algorithm>
+
 using namespace std;
 
 unordered_map<string, int> precedence = {
@@ -15,44 +17,25 @@ unordered_map<string, int> precedence = {
 };
 unordered_set<string> functions = {"pow", "abs", "max", "min"};
 
-vector<string> tokenize(const string& infix) {
-    vector<string> result;
-    string num_buffer;
-    string func_buffer;
-    for (char c : infix) {
-        if (isdigit(c) || c == '.') {
-            num_buffer += c;
-        }
-        else {
-            if (!num_buffer.empty()) {
-                result.emplace_back(num_buffer);
-                num_buffer.clear();
-            }
-            if (precedence.contains(string(1, c))) {
-                result.emplace_back(1, c);
-            }
-            else if (isspace(c)) {
-                if (!func_buffer.empty()) {
-                    result.emplace_back(func_buffer);
-                    func_buffer.clear();
+unordered_map<string, float> global_variables;
+
+std::vector<std::string> tokenize(const std::string& infix) {
+    std::vector<std::string> tokens;
+    std::string tk;
+    for (char ch : infix) {
+        if (!isspace(ch)) {
+            if (ch == '(' || ch == ')' || ch == ',' || precedence.contains(std::string(1, ch))) {
+                if (!tk.empty()) {
+                    tokens.emplace_back(tk);
+                    tk.clear();
                 }
+                tokens.emplace_back(1, ch);
             }
-            else if (c == '(' || c == ')'|| c == ',') {
-                if (!func_buffer.empty()) {
-                    result.emplace_back(func_buffer);
-                    func_buffer.clear();
-                }
-                result.emplace_back(1,c);
-            }
-            else {
-                func_buffer += c;
-            }
+            else tk += ch;
         }
     }
-    if (!num_buffer.empty()) {
-        result.emplace_back(num_buffer);
-    }
-    return result;
+    if (!tk.empty()) tokens.push_back(tk);
+    return tokens;
 }
 bool is_number (string str) {
     for (char c :str) {
@@ -64,7 +47,7 @@ vector<string> shunting_yard(vector<string> tokens) {
     stack<string> operators_stack;
     vector<string> output;
     for (string token : tokens) {
-        if (is_number(token)) output.emplace_back(token);
+        if (is_number(token) || global_variables.contains(token)) output.emplace_back(token);
         else if (functions.contains(token)) operators_stack.push(token);
         else if (precedence.contains(token)) {
             while (!operators_stack.empty() && operators_stack.top() != "(" && precedence[operators_stack.top()] >= precedence[token]) {
@@ -107,6 +90,9 @@ float calculate(vector<string> tokens) {
         if (is_number(token)) {
             S.push(stof(token));
         }
+        else if (global_variables.contains(token)) {
+            S.push(global_variables.at(token));
+        }
         else {
             float b = S.top();
             S.pop();
@@ -132,10 +118,29 @@ float calculate(vector<string> tokens) {
     return S.top();
 }
 
+void variable_definition(const std::string& input) {
+    if (size_t eq_pos = input.find('='); eq_pos != std::string::npos) {
+        std::string var_name = input.substr(4, eq_pos - 4);
+        var_name.erase(std::ranges::remove_if(var_name, ::isspace).begin(), var_name.end());
+        std::string expr = input.substr(eq_pos + 1);
+        expr.erase(std::ranges::remove_if(expr, ::isspace).begin(), expr.end());
+
+        auto tokens = shunting_yard(tokenize(expr));
+        const double value = calculate(tokens);
+        if (value == std::numeric_limits<double>::infinity()) std::cout << "Incorrect expression" << std::endl;
+        else global_variables[var_name] = value;
+    }
+    else std::cout << "Missing '=' in variable assignment" << std::endl;
+}
+
 int main() {
     auto input = []() {
         string input;
         getline(cin, input);
+        if (input.starts_with("var ")) {
+            variable_definition(input);
+            return;
+        }
 
         auto tokens = tokenize(input);
         auto rpn = shunting_yard(tokens);
