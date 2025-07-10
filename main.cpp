@@ -133,12 +133,18 @@ float calculate(vector<string> tokens) {
 }
 
 int main() {
-    string str = "34*max(9+ 45, 9.8)";
-    auto tokens = tokenize(str);
-    auto res = shunting_yard(tokens);
-    for (auto x : res) {
-        cout << x << " ";
+    auto input = []() {
+        string input;
+        getline(cin, input);
+
+        auto tokens = tokenize(input);
+        auto rpn = shunting_yard(tokens);
+        auto res = calculate(rpn);
+
+        if (res == numeric_limits<float>::infinity()) cout << "Invalid expression" << endl;
+        else cout << res << endl;
+    };
+    while (true) {
+        input();
     }
-    cout << endl;
-    cout << calculate(res);
 }
